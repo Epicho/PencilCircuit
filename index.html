@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PencilCircuit - Interactive Blueprints</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/dreampulse/computer-modern-web-font@master/fonts.css">
+    <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Gloria+Hallelujah&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- GLOBAL UI --- */
+        body {
+            font-family: 'Architects Daughter', cursive;
+            background-color: #fdfbf7;
+            color: #2d2d2d;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+            background-image: linear-gradient(#e8e6e1 1px, transparent 1px), linear-gradient(90deg, #e8e6e1 1px, transparent 1px);
+            background-size: 20px 20px;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        h1 { 
+            font-family: 'Gloria Hallelujah', cursive;
+            font-size: 56px; 
+            margin-bottom: 5px;
+            color: #2d2d2d;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.15); 
+        }
+
+        /* --- CATEGORY HEADERS --- */
+        .category-title {
+            font-size: 28px;
+            margin-top: 30px;
+            margin-bottom: 10px;
+            width: 100%;
+            text-align: left;
+            border-bottom: 2px dashed #2d2d2d;
+            padding-bottom: 5px;
+            padding-left: 10px;
+        }
+
+        /* --- VIEW CONTAINERS --- */
+        #gallery-view { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 900px; }
+        #editor-view { display: none; flex-direction: column; align-items: center; width: 100%; } 
+
+        /* --- THE GALLERY GRID --- */
+        .blueprint-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 30px;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .blueprint-card {
+            background: #ffffff;
+            border: 2px solid #2d2d2d;
+            border-radius: 15px 5px 12px 4px / 4px 12px 5px 15px; 
+            padding: 25px 15px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+            transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+        }
+
+        .blueprint-card:hover {
+            transform: rotate(-2deg) scale(1.05);
+            background-color: #fff9c4; 
+            box-shadow: 6px 6px 0px rgba(0,0,0,0.15);
+        }
+
+        .blueprint-card span.title { margin-top: 15px; font-size: 22px; font-weight: bold; text-align: center; }
+        
+        /* DYNAMIC THUMBNAIL SIZING */
+        .thumbnail { width: 100%; max-width: 220px; height: auto; min-height: 90px; }
+
+        /* SPECIAL SCALING FOR MASSIVE ACTIVE FILTER SVGS */
+        #gallery-view .active-thumbnail .wire { stroke-width: 10px; }
+        #gallery-view .active-thumbnail .label { font-size: 60px; }
+
+        /* --- EDITOR CONTROLS --- */
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            font-family: 'Architects Daughter', cursive;
+            padding: 8px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #2d2d2d;
+            color: #ffffff;
+            border: none;
+            border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
+            transition: transform 0.1s;
+        }
+        .btn:hover { transform: scale(1.05) rotate(-2deg); }
+        .btn-outline { background-color: transparent; color: #2d2d2d; border: 2px solid #2d2d2d; }
+        .btn-outline:hover { background-color: #2d2d2d; color: #ffffff; }
+
+        .controls-bar {
+            background: #ffffff;
+            padding: 20px 30px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column; 
+            gap: 15px;
+            border: 2px solid #2d2d2d;
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+            box-shadow: 3px 3px 0px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .input-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .control-item { display: flex; align-items: center; gap: 10px; font-weight: bold; }
+
+        .input-group {
+            display: flex;
+            border: 2px solid #2d2d2d;
+            border-radius: 10px 20px 10px 20px / 20px 10px 20px 10px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        input, select {
+            font-family: 'Architects Daughter', cursive;
+            font-size: 18px;
+            padding: 6px 10px;
+            border: none; outline: none;
+            color: #2d2d2d; background: transparent;
+        }
+        input { width: 60px; text-align: center; }
+        select { border-left: 2px solid #2d2d2d; cursor: pointer; background-color: #f4f4f4; }
+
+        /* --- CANVAS CONTAINER --- */
+        #schematic-container {
+            background-color: #ffffff;
+            padding: 30px;
+            border: 2px solid #2d2d2d;
+            border-radius: 2px 255px 3px 25px / 255px 5px 225px 3px;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            max-width: 1000px;
+            overflow: auto; 
+        }
+
+        #dynamic-svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* --- TOGGLE UI --- */
+        .toggle-container {
+            display: flex; align-items: center; gap: 8px;
+            margin-top: 20px; font-size: 14px; font-weight: bold;
+        }
+        .switch { position: relative; display: inline-block; width: 36px; height: 18px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #2d2d2d; transition: .4s; border-radius: 18px; }
+        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #007bff; }
+        input:checked + .slider:before { transform: translateX(18px); } 
+
+        /* --- SVG STYLING --- */
+        .wire { 
+            stroke: #2d2d2d; stroke-width: 2.5px;
+            stroke-linecap: round; stroke-linejoin: round; fill: none; 
+            transition: stroke 0.3s, stroke-width 0.3s;
+        }
+        .label {
+            font-family: 'Architects Daughter', cursive;
+            font-size: 20px; fill: #2d2d2d;
+            text-anchor: middle; dominant-baseline: middle; 
+            transition: font-family 0.3s, fill 0.3s;
+        }
+        .node { fill: #2d2d2d; } 
+
+        /* PRO MODE OVERRIDES */
+        #dynamic-svg.pro-mode .wire { stroke: #000000; stroke-width: 2px; stroke-linecap: butt; stroke-linejoin: miter; }
+        #dynamic-svg.pro-mode .label { font-family: "Computer Modern Serif", serif; fill: #000000; }
+        #dynamic-svg.pro-mode .node { fill: #000000; }
+    </style>
+</head>
+<body>
+
+    <h1>PencilCircuit</h1>
+
+    <div id="gallery-view">
+        
+        <h3 class="category-title">Passive Filters</h3>
+        <div class="blueprint-grid">
+            <div class="blueprint-card" onclick="openEditor('source-r')">
+                <svg class="thumbnail" viewBox="0 0 120 80">
+                    <circle cx="20" cy="40" r="10" class="wire" />
+                    <path class="wire" d="M 20,30 L 20,20 L 40,20" />
+                    <path class="wire" d="M 40,20 L 44,14 L 52,26 L 60,14 L 68,26 L 76,14 L 80,20" />
+                    <path class="wire" d="M 80,20 L 100,20 L 100,60 L 20,60 L 20,50" />
+                </svg>
+                <span class="title">Basic Source-R</span>
+            </div>
+
+            <div class="blueprint-card" onclick="openEditor('rc-filter')">
+                <svg class="thumbnail" viewBox="0 0 120 80">
+                    <circle cx="20" cy="40" r="10" class="wire" />
+                    <path class="wire" d="M 20,30 L 20,20 L 40,20" />
+                    <path class="wire" d="M 40,20 L 44,14 L 52,26 L 60,14 L 68,26 L 76,14 L 80,20" />
+                    <path class="wire" d="M 80,20 L 100,20 L 100,35" />
+                    <path class="wire" d="M 90,35 L 110,35 M 90,45 L 110,45" />
+                    <path class="wire" d="M 100,45 L 100,60 L 20,60 L 20,50" />
+                </svg>
+                <span class="title">RC Filter</span>
+            </div>
+
+            <div class="blueprint-card" onclick="openEditor('rlc-filter')">
+                <svg class="thumbnail" viewBox="0 0 120 80">
+                    <circle cx="20" cy="40" r="10" class="wire" />
+                    <path class="wire" d="M 20,30 L 20,20 L 30,20" />
+                    <path class="wire" d="M 30,20 L 33,14 L 39,26 L 45,14 L 51,26 L 57,14 L 60,20" />
+                    <path class="wire" d="M 60,20 L 65,20" />
+                    <path class="wire" d="M 65,20 A 4 4 0 0 1 73 20 A 4 4 0 0 1 81 20" />
+                    <path class="wire" d="M 81,20 L 100,20 L 100,35" />
+                    <path class="wire" d="M 90,35 L 110,35 M 90,45 L 110,45" />
+                    <path class="wire" d="M 100,45 L 100,60 L 20,60 L 20,50" />
+                </svg>
+                <span class="title">RLC Filter</span>
+            </div>
+        </div>
+
+        <h3 class="category-title">Active Filters (Sallen-Key)</h3>
+        <div class="blueprint-grid">
+            
+            <div class="blueprint-card" onclick="openEditor('sallen-key-lp')">
+                <svg class="thumbnail active-thumbnail" viewBox="-100 0 650 400">
+                    <path class="wire" d="M 0,200 L 50,200" />
+                    <circle cx="0" cy="200" r="8" class="node" />
+                    
+                    <path class="wire" d="M 50,200 L 60,180 L 80,220 L 100,180 L 120,220 L 130,200 L 150,200" />
+                    
+                    <circle cx="150" cy="200" r="8" class="node" />
+                    
+                    <path class="wire" d="M 150,200 L 160,200 L 170,180 L 190,220 L 210,180 L 230,220 L 240,200 L 260,200" />
+                    
+                    <circle cx="260" cy="200" r="8" class="node" />
+                    
+                    <path class="wire" d="M 260,200 L 260,240 M 240,240 L 280,240 M 240,265 L 280,265 M 260,265 L 260,330" />
+                    <path class="wire" d="M 240,330 L 280,330 M 248,342 L 272,342 M 256,354 L 264,354" />
+                    
+                    <path class="wire" d="M 260,200 L 320,200" />
+                    <path class="wire" d="M 320,130 L 320,230 L 420,180 Z" />
+                    <path class="wire" style="stroke-width: 4px;" d="M 330,160 L 350,160 M 330,200 L 350,200 M 340,190 L 340,210" />
+                    
+                    <path class="wire" d="M 150,200 L 150,80 L 200,80 M 200,50 L 200,110 M 220,50 L 220,110 M 220,80 L 450,80 L 450,180" />
+                    
+                    <path class="wire" d="M 320,160 L 290,160 L 290,120 L 450,120 L 450,180" />
+                    <path class="wire" d="M 420,180 L 480,180" />
+                    
+                    <circle cx="450" cy="180" r="8" class="node" />
+                    <circle cx="480" cy="180" r="8" class="node" />
+                </svg>
+                <span class="title">Low Pass</span>
+            </div>
+
+            <div class="blueprint-card" onclick="openEditor('sallen-key-hp')">
+                <svg class="thumbnail active-thumbnail" viewBox="-100 0 650 400">
+                    <path class="wire" d="M 0,200 L 60,200" />
+                    <circle cx="0" cy="200" r="8" class="node" />
+                    
+                    <path class="wire" d="M 60,180 L 60,220 M 80,180 L 80,220 M 80,200 L 150,200" />
+                    
+                    <circle cx="150" cy="200" r="8" class="node" />
+                    
+                    <path class="wire" d="M 150,200 L 180,200 M 180,180 L 180,220 M 200,180 L 200,220 M 200,200 L 260,200 L 320,200" />
+                    
+                    <circle cx="260" cy="200" r="8" class="node" />
+                    
+                    <path class="wire" d="M 320,130 L 320,230 L 420,180 Z" />
+                    <path class="wire" style="stroke-width: 4px;" d="M 330,160 L 350,160 M 330,200 L 350,200 M 340,190 L 340,210" />
+                    
+                    <path class="wire" d="M 260,200 L 260,230 L 245,240 L 275,260 L 245,280 L 275,300 L 260,310 L 260,330" />
+                    <path class="wire" d="M 240,330 L 280,330 M 248,342 L 272,342 M 256,354 L 264,354" />
+                    
+                    <path class="wire" d="M 150,200 L 150,80 L 200,80 L 210,60 L 230,100 L 250,60 L 270,100 L 280,80 L 450,80 L 450,180" />
+                    
+                    <path class="wire" d="M 320,160 L 290,160 L 290,120 L 450,120 L 450,180" />
+                    <path class="wire" d="M 420,180 L 480,180" />
+                    
+                    <circle cx="450" cy="180" r="8" class="node" />
+                    <circle cx="480" cy="180" r="8" class="node" />
+                </svg>
+                <span class="title">High Pass</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="editor-view">
+        
+        <div class="header-controls">
+            <button class="btn btn-outline" onclick="closeEditor()">⬅ Back to Gallery</button>
+            <h2 id="editor-title" style="margin:0; border:none;">Template Name</h2>
+            <button class="btn" onclick="copyToClipboard()">Export Image</button>
+        </div>
+
+        <div class="controls-bar" id="dynamic-controls"></div>
+
+        <div id="schematic-container">
+            <svg id="dynamic-svg" xmlns="http://www.w3.org/2000/svg">
+                </svg>
+        </div>
+
+        <div class="toggle-container">
+            <span>Image: Sketch</span>
+            <label class="switch">
+                <input type="checkbox" id="mode-toggle">
+                <span class="slider"></span>
+            </label>
+            <span>Pro</span>
+        </div>
+
+    </div>
+
+    <script>
+        const templates = {
+            'source-r': {
+                name: 'Basic Source-R',
+                width: 400, height: 200, viewBox: '-50 0 400 200',
+                inputs: [
+                    { id: 'v', label: 'Voltage', default: '5', units: ['V', 'kV', 'mV'] },
+                    { id: 'r', label: 'Resistance', default: '10', units: ['&Omega;', 'k&Omega;', 'M&Omega;'] }
+                ],
+                svg: `
+                    <path class="wire" d="M 50,150 L 250,150 L 250,50 L 175,50" />
+                    <path class="wire" d="M 125,50 L 50,50 L 50,80" />
+                    <path class="wire" d="M 50,120 L 50,150" />
+                    <path class="wire" d="M 125,50 L 130,40 L 140,60 L 150,40 L 160,60 L 170,40 L 175,50" />
+                    <circle class="wire" cx="50" cy="100" r="20" />
+                    <text class="label" x="50" y="94" style="font-size: 16px;">+</text>
+                    <text class="label" x="50" y="106" style="font-size: 16px;">-</text>
+                    <text id="label-r" class="label" x="150" y="20"></text>
+                    <text id="label-v" class="label" x="25" y="100" style="text-anchor: end;"></text>
+                `
+            },
+            'rc-filter': {
+                name: 'RC Low Pass Filter',
+                width: 450, height: 200, viewBox: '-50 0 450 200',
+                inputs: [
+                    { id: 'v', label: 'Source', default: '5', units: ['V', 'Vpp', 'mV'] },
+                    { id: 'r', label: 'Resistor', default: '10', units: ['k&Omega;', '&Omega;', 'M&Omega;'] },
+                    { id: 'c', label: 'Capacitor', default: '100', units: ['&mu;F', 'nF', 'pF'] }
+                ],
+                svg: `
+                    <path class="wire" d="M 50,120 L 50,150 L 250,150 L 250,110" />
+                    <path class="wire" d="M 125,50 L 50,50 L 50,80" />
+                    <path class="wire" d="M 175,50 L 250,50 L 250,90" />
+                    <path class="wire" d="M 125,50 L 130,40 L 140,60 L 150,40 L 160,60 L 170,40 L 175,50" />
+                    <path class="wire" d="M 230,90 L 270,90 M 230,110 L 270,110" />
+                    <circle class="wire" cx="50" cy="100" r="20" />
+                    <text class="label" x="50" y="94" style="font-size: 16px;">+</text>
+                    <text class="label" x="50" y="106" style="font-size: 16px;">-</text>
+                    <text id="label-r" class="label" x="150" y="20"></text>
+                    <text id="label-c" class="label" x="280" y="100" style="text-anchor: start;"></text>
+                    <text id="label-v" class="label" x="25" y="100" style="text-anchor: end;"></text>
+                `
+            },
+            'rlc-filter': {
+                name: 'RLC Filter',
+                width: 450, height: 200, viewBox: '-50 0 450 200',
+                inputs: [
+                    { id: 'v', label: 'Source', default: '5', units: ['V', 'Vpp'] },
+                    { id: 'r', label: 'Resistor', default: '10', units: ['k&Omega;', '&Omega;'] },
+                    { id: 'l', label: 'Inductor', default: '100', units: ['mH', '&mu;H', 'H'] },
+                    { id: 'c', label: 'Capacitor', default: '10', units: ['&mu;F', 'nF'] }
+                ],
+                svg: `
+                    <path class="wire" d="M 50,120 L 50,150 L 250,150 L 250,110" />
+                    <path class="wire" d="M 90,50 L 50,50 L 50,80" />
+                    <path class="wire" d="M 90,50 L 95,40 L 105,60 L 115,40 L 125,60 L 135,40 L 140,50" />
+                    <path class="wire" d="M 140,50 L 170,50" />
+                    <path class="wire" d="M 170,50 A 10 10 0 0 1 190 50 A 10 10 0 0 1 210 50 A 10 10 0 0 1 230 50" />
+                    <path class="wire" d="M 230,50 L 250,50 L 250,90" />
+                    <path class="wire" d="M 230,90 L 270,90 M 230,110 L 270,110" />
+                    <circle class="wire" cx="50" cy="100" r="20" />
+                    <text class="label" x="50" y="94" style="font-size: 16px;">+</text>
+                    <text class="label" x="50" y="106" style="font-size: 16px;">-</text>
+                    <text id="label-r" class="label" x="115" y="20"></text>
+                    <text id="label-l" class="label" x="200" y="20"></text>
+                    <text id="label-c" class="label" x="280" y="100" style="text-anchor: start;"></text>
+                    <text id="label-v" class="label" x="25" y="100" style="text-anchor: end;"></text>
+                `
+            },
+            'sallen-key-lp': {
+                name: 'Sallen-Key Low Pass Filter',
+                width: 600, height: 400, viewBox: '-50 0 600 400', 
+                inputs: [
+                    { id: 'vi', label: 'Vin', default: '5', units: ['V', 'mV'] },
+                    { id: 'r1', label: 'R1', default: '10', units: ['k&Omega;', '&Omega;', 'M&Omega;'] },
+                    { id: 'r2', label: 'R2', default: '10', units: ['k&Omega;', '&Omega;', 'M&Omega;'] },
+                    { id: 'c1', label: 'C1', default: '100', units: ['nF', 'pF', '&mu;F'] },
+                    { id: 'c2', label: 'C2', default: '100', units: ['nF', 'pF', '&mu;F'] }
+                ],
+                svg: `
+                    <path class="wire" d="M 0,200 L 50,200" />
+                    <circle cx="0" cy="200" r="3" class="node" />
+
+                    <path class="wire" d="M 50,200 L 60,180 L 80,220 L 100,180 L 120,220 L 130,200 L 150,200" />
+                    <text id="label-r1" class="label" x="90" y="160"></text>
+
+                    <circle cx="150" cy="200" r="3" class="node" />
+                    
+                    <path class="wire" d="M 150,200 L 160,200 L 170,180 L 190,220 L 210,180 L 230,220 L 240,200 L 260,200" />
+                    <text id="label-r2" class="label" x="200" y="160"></text>
+
+                    <circle cx="260" cy="200" r="3" class="node" />
+
+                    <path class="wire" d="M 260,200 L 260,240" />
+                    <path class="wire" d="M 240,240 L 280,240 M 240,255 L 280,255" />
+                    <path class="wire" d="M 260,255 L 260,330" />
+                    <text id="label-c2" class="label" x="290" y="247.5" style="text-anchor: start;"></text>
+
+                    <path class="wire" d="M 240,330 L 280,330 M 248,338 L 272,338 M 256,346 L 264,346" />
+
+                    <path class="wire" d="M 260,200 L 320,200" />
+
+                    <path class="wire" d="M 320,130 L 320,230 L 420,180 Z" />
+                    <path class="wire" style="stroke-width: 1.5px;" d="M 325,160 L 335,160 M 325,200 L 335,200 M 330,195 L 330,205" />
+
+                    <path class="wire" d="M 150,200 L 150,80 L 200,80" />
+                    <path class="wire" d="M 200,60 L 200,100 M 215,60 L 215,100" />
+                    <text id="label-c1" class="label" x="207.5" y="40"></text>
+                    <path class="wire" d="M 215,80 L 450,80 L 450,180" />
+
+                    <path class="wire" d="M 320,160 L 290,160 L 290,120 L 450,120 L 450,180" />
+
+                    <path class="wire" d="M 420,180 L 480,180" />
+                    <circle cx="450" cy="180" r="3" class="node" />
+                    <circle cx="480" cy="180" r="3" class="node" />
+                    
+                    <text class="label" x="490" y="180" style="text-anchor: start;">Vout</text>
+                    <text id="label-vi" class="label" x="-10" y="200" style="text-anchor: end;"></text>
+                `
+            },
+            'sallen-key-hp': {
+                name: 'Sallen-Key High Pass Filter',
+                width: 600, height: 400, viewBox: '-50 0 600 400', 
+                inputs: [
+                    { id: 'vi', label: 'Vin', default: '5', units: ['V', 'mV'] },
+                    { id: 'c1', label: 'C1', default: '100', units: ['nF', 'pF', '&mu;F'] },
+                    { id: 'c2', label: 'C2', default: '100', units: ['nF', 'pF', '&mu;F'] },
+                    { id: 'r1', label: 'R1', default: '10', units: ['k&Omega;', '&Omega;', 'M&Omega;'] },
+                    { id: 'r2', label: 'R2', default: '10', units: ['k&Omega;', '&Omega;', 'M&Omega;'] }
+                ],
+                svg: `
+                    <path class="wire" d="M 0,200 L 60,200" />
+                    <circle cx="0" cy="200" r="3" class="node" />
+
+                    <path class="wire" d="M 60,180 L 60,220 M 75,180 L 75,220" />
+                    <text id="label-c1" class="label" x="67.5" y="160"></text>
+
+                    <path class="wire" d="M 75,200 L 150,200" />
+                    <circle cx="150" cy="200" r="3" class="node" />
+
+                    <path class="wire" d="M 150,200 L 180,200" />
+
+                    <path class="wire" d="M 180,180 L 180,220 M 195,180 L 195,220" />
+                    <text id="label-c2" class="label" x="187.5" y="160"></text>
+
+                    <path class="wire" d="M 195,200 L 260,200 L 320,200" />
+                    <circle cx="260" cy="200" r="3" class="node" />
+
+                    <path class="wire" d="M 320,130 L 320,230 L 420,180 Z" />
+                    <path class="wire" style="stroke-width: 1.5px;" d="M 325,160 L 335,160 M 325,200 L 335,200 M 330,195 L 330,205" />
+
+                    <path class="wire" d="M 260,200 L 260,230 L 245,240 L 275,260 L 245,280 L 275,300 L 260,310 L 260,330" />
+                    <text id="label-r2" class="label" x="290" y="270" style="text-anchor: start;"></text>
+
+                    <path class="wire" d="M 240,330 L 280,330 M 248,338 L 272,338 M 256,346 L 264,346" />
+
+                    <path class="wire" d="M 150,200 L 150,80 L 200,80" />
+                    <path class="wire" d="M 200,80 L 210,60 L 230,100 L 250,60 L 270,100 L 280,80 L 300,80" />
+                    <text id="label-r1" class="label" x="240" y="40"></text>
+                    <path class="wire" d="M 300,80 L 450,80 L 450,180" />
+
+                    <path class="wire" d="M 320,160 L 290,160 L 290,120 L 450,120 L 450,180" />
+                    
+                    <path class="wire" d="M 420,180 L 480,180" />
+                    <circle cx="450" cy="180" r="3" class="node" />
+                    <circle cx="480" cy="180" r="3" class="node" />
+                    
+                    <text class="label" x="490" y="180" style="text-anchor: start;">Vout</text>
+                    <text id="label-vi" class="label" x="-10" y="200" style="text-anchor: end;"></text>
+                `
+            }
+        };
+
+        let currentActiveTemplate = null;
+
+        function openEditor(templateId) {
+            currentActiveTemplate = templates[templateId];
+            
+            document.getElementById('gallery-view').style.display = 'none';
+            document.getElementById('editor-view').style.display = 'flex';
+            document.getElementById('editor-title').innerText = currentActiveTemplate.name;
+            
+            const dynamicSvg = document.getElementById('dynamic-svg');
+            dynamicSvg.setAttribute('width', currentActiveTemplate.width);
+            dynamicSvg.setAttribute('height', currentActiveTemplate.height);
+            dynamicSvg.setAttribute('viewBox', currentActiveTemplate.viewBox);
+            dynamicSvg.innerHTML = currentActiveTemplate.svg;
+
+            const controlsContainer = document.getElementById('dynamic-controls');
+            controlsContainer.innerHTML = ''; 
+
+            let topRow = document.createElement('div');
+            topRow.className = 'input-row';
+            let bottomRow = document.createElement('div');
+            bottomRow.className = 'input-row';
+
+            const totalInputs = currentActiveTemplate.inputs.length;
+            let splitIndex = 3; 
+            if (totalInputs === 4) {
+                splitIndex = 2; 
+            }
+
+            currentActiveTemplate.inputs.forEach((inputData, index) => {
+                let optionsHTML = inputData.units.map(unit => `<option value="${unit}">${unit}</option>`).join('');
+                const html = `
+                    <div class="control-item">
+                        <label>${inputData.label}:</label>
+                        <div class="input-group">
+                            <input type="text" id="input-${inputData.id}" value="${inputData.default}">
+                            <select id="unit-${inputData.id}">${optionsHTML}</select>
+                        </div>
+                    </div>
+                `;
+                
+                if (index < splitIndex) {
+                    topRow.insertAdjacentHTML('beforeend', html);
+                } else {
+                    bottomRow.insertAdjacentHTML('beforeend', html);
+                }
+            });
+            
+            controlsContainer.appendChild(topRow);
+            if (totalInputs > splitIndex) {
+                controlsContainer.appendChild(bottomRow);
+            }
+
+            currentActiveTemplate.inputs.forEach(inputData => {
+                document.getElementById(`input-${inputData.id}`).addEventListener('input', () => updateLabel(inputData.id));
+                document.getElementById(`unit-${inputData.id}`).addEventListener('change', () => updateLabel(inputData.id));
+                updateLabel(inputData.id);
+            });
+        }
+
+        function closeEditor() {
+            document.getElementById('editor-view').style.display = 'none';
+            document.getElementById('gallery-view').style.display = 'flex';
+        }
+
+        function updateLabel(id) {
+            const val = document.getElementById(`input-${id}`).value;
+            const unit = document.getElementById(`unit-${id}`).value;
+            const targetSvgText = document.getElementById(`label-${id}`);
+            if(targetSvgText) {
+                targetSvgText.innerHTML = val + unit;
+            }
+        }
+
+        const modeToggle = document.getElementById('mode-toggle');
+        const dynamicSvg = document.getElementById('dynamic-svg');
+        modeToggle.addEventListener('change', function() {
+            if (this.checked) dynamicSvg.classList.add('pro-mode');
+            else dynamicSvg.classList.remove('pro-mode');
+        });
+
+        async function copyToClipboard() {
+            const button = document.querySelector('.header-controls .btn:not(.btn-outline)'); 
+            const isProMode = modeToggle.checked; 
+            const clone = dynamicSvg.cloneNode(true);
+            
+            const wires = clone.querySelectorAll('.wire');
+            wires.forEach(el => {
+                el.style.fill = 'none';
+                el.style.stroke = isProMode ? '#000000' : '#2d2d2d';
+                el.style.strokeWidth = isProMode ? '2px' : '2.5px';
+                el.style.strokeLinecap = isProMode ? 'butt' : 'round';
+                el.style.strokeLinejoin = isProMode ? 'miter' : 'round';
+            });
+
+            const labels = clone.querySelectorAll('.label');
+            labels.forEach(el => {
+                el.style.fontFamily = isProMode ? '"Computer Modern Serif", serif' : "'Architects Daughter', cursive";
+                el.style.fontSize = '20px';
+                el.style.fill = isProMode ? '#000000' : '#2d2d2d';
+                el.style.dominantBaseline = 'middle';
+
+                if (el.getAttribute('style') && el.getAttribute('style').includes('text-anchor: end')) {
+                    el.style.textAnchor = 'end';
+                } else if (el.getAttribute('style') && el.getAttribute('style').includes('text-anchor: start')) {
+                    el.style.textAnchor = 'start';
+                } else {
+                    el.style.textAnchor = 'middle';
+                }
+
+                if (el.innerHTML === '+' || el.innerHTML === '-') {
+                    el.style.fontSize = '16px';
+                }
+            });
+            
+            const nodes = clone.querySelectorAll('.node');
+            nodes.forEach(el => {
+                el.style.fill = isProMode ? '#000000' : '#2d2d2d';
+            });
+
+            const svgString = new XMLSerializer().serializeToString(clone);
+            const margin = 10;
+            const svgWidth = currentActiveTemplate.width; 
+            const svgHeight = currentActiveTemplate.height; 
+            
+            const canvasWidth = svgWidth + 2 * margin;
+            const canvasHeight = svgHeight + 2 * margin;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = canvasWidth; canvas.height = canvasHeight;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const img = new Image();
+            const svgBlob = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
+            const url = URL.createObjectURL(svgBlob);
+            
+            img.onload = async function() {
+                ctx.drawImage(img, margin, margin, svgWidth, svgHeight);
+                URL.revokeObjectURL(url);
+                canvas.toBlob(async (blob) => {
+                    try {
+                        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+                        const origText = button.innerText; button.innerText = "Copied!";
+                        setTimeout(() => button.innerText = origText, 2000);
+                    } catch (err) {
+                        alert("Failed to copy image.");
+                    }
+                }, 'image/png');
+            };
+            img.src = url;
+        }
+    </script>
+</body>
+</html>
