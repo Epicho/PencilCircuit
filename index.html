@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PencilCircuit - Interactive Blueprints</title>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/dreampulse/computer-modern-web-font@master/fonts.css">
@@ -22,6 +22,11 @@
             background-size: 20px 20px;
             min-height: 100vh;
             margin: 0;
+            box-sizing: border-box;
+        }
+
+        *, *:before, *:after {
+            box-sizing: inherit;
         }
 
         h1 { 
@@ -30,6 +35,7 @@
             margin-bottom: 5px;
             color: #2d2d2d;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.15); 
+            text-align: center;
         }
 
         /* --- CATEGORY HEADERS --- */
@@ -46,7 +52,7 @@
 
         /* --- VIEW CONTAINERS --- */
         #gallery-view { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 900px; }
-        #editor-view { display: none; flex-direction: column; align-items: center; width: 100%; } 
+        #editor-view { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 900px; } 
 
         /* --- THE GALLERY GRID --- */
         .blueprint-grid {
@@ -54,7 +60,7 @@
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 30px;
             width: 100%;
-            padding: 20px;
+            padding: 20px 0;
         }
 
         .blueprint-card {
@@ -89,8 +95,8 @@
         .header-controls {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             width: 100%;
-            max-width: 900px;
             margin-bottom: 20px;
         }
 
@@ -104,6 +110,7 @@
             border: none;
             border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
             transition: transform 0.1s;
+            white-space: nowrap;
         }
         .btn:hover { transform: scale(1.05) rotate(-2deg); }
         .btn-outline { background-color: transparent; color: #2d2d2d; border: 2px solid #2d2d2d; }
@@ -120,7 +127,6 @@
             border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
             box-shadow: 3px 3px 0px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 900px;
         }
 
         .input-row {
@@ -161,13 +167,14 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            max-width: 1000px;
-            overflow: auto; 
+            width: 100%;
+            overflow: hidden; 
         }
 
         #dynamic-svg {
-            max-width: 100%;
+            width: 100%;
             height: auto;
+            max-height: 50vh; /* Keeps it from getting too tall on mobile */
         }
 
         /* --- TOGGLE UI --- */
@@ -200,6 +207,37 @@
         #dynamic-svg.pro-mode .wire { stroke: #000000; stroke-width: 2px; stroke-linecap: butt; stroke-linejoin: miter; }
         #dynamic-svg.pro-mode .label { font-family: "Computer Modern Serif", serif; fill: #000000; }
         #dynamic-svg.pro-mode .node { fill: #000000; }
+
+        /* ========================================== */
+        /* MOBILE RESPONSIVE DESIGN (MEDIA QUERIES)   */
+        /* ========================================== */
+        @media (max-width: 768px) {
+            body { padding: 20px 10px; }
+            
+            h1 { font-size: 42px; line-height: 1.1; margin-bottom: 20px; }
+            
+            .category-title { font-size: 24px; text-align: center; border-bottom: none; padding: 0; margin-top: 10px;}
+            
+            .blueprint-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; padding: 10px 0; }
+            .blueprint-card { padding: 15px 10px; }
+            .blueprint-card span.title { font-size: 18px; margin-top: 10px; }
+            
+            /* Stack header controls vertically on small screens */
+            .header-controls { flex-direction: column; gap: 15px; }
+            h2#editor-title { font-size: 24px; text-align: center; margin: 0; padding: 0; border: none; order: -1; } /* Puts title at top */
+            
+            .controls-bar { padding: 15px; border-radius: 15px; }
+            
+            /* Stack inputs nicely */
+            .input-row { flex-direction: column; align-items: center; gap: 15px; }
+            .control-item { width: 100%; max-width: 280px; justify-content: space-between; }
+            
+            #schematic-container { padding: 10px; border-radius: 15px; }
+            
+            input { width: 50px; font-size: 16px; }
+            select { font-size: 16px; }
+            .btn { font-size: 16px; padding: 8px 16px; }
+        }
     </style>
 </head>
 <body>
@@ -254,27 +292,18 @@
                 <svg class="thumbnail active-thumbnail" viewBox="-100 0 650 400">
                     <path class="wire" d="M 0,200 L 50,200" />
                     <circle cx="0" cy="200" r="8" class="node" />
-                    
                     <path class="wire" d="M 50,200 L 60,180 L 80,220 L 100,180 L 120,220 L 130,200 L 150,200" />
-                    
                     <circle cx="150" cy="200" r="8" class="node" />
-                    
                     <path class="wire" d="M 150,200 L 160,200 L 170,180 L 190,220 L 210,180 L 230,220 L 240,200 L 260,200" />
-                    
                     <circle cx="260" cy="200" r="8" class="node" />
-                    
                     <path class="wire" d="M 260,200 L 260,240 M 240,240 L 280,240 M 240,265 L 280,265 M 260,265 L 260,330" />
                     <path class="wire" d="M 240,330 L 280,330 M 248,342 L 272,342 M 256,354 L 264,354" />
-                    
                     <path class="wire" d="M 260,200 L 320,200" />
                     <path class="wire" d="M 320,130 L 320,230 L 420,180 Z" />
                     <path class="wire" style="stroke-width: 4px;" d="M 330,160 L 350,160 M 330,200 L 350,200 M 340,190 L 340,210" />
-                    
                     <path class="wire" d="M 150,200 L 150,80 L 200,80 M 200,50 L 200,110 M 220,50 L 220,110 M 220,80 L 450,80 L 450,180" />
-                    
                     <path class="wire" d="M 320,160 L 290,160 L 290,120 L 450,120 L 450,180" />
                     <path class="wire" d="M 420,180 L 480,180" />
-                    
                     <circle cx="450" cy="180" r="8" class="node" />
                     <circle cx="480" cy="180" r="8" class="node" />
                 </svg>
@@ -285,26 +314,17 @@
                 <svg class="thumbnail active-thumbnail" viewBox="-100 0 650 400">
                     <path class="wire" d="M 0,200 L 60,200" />
                     <circle cx="0" cy="200" r="8" class="node" />
-                    
                     <path class="wire" d="M 60,180 L 60,220 M 80,180 L 80,220 M 80,200 L 150,200" />
-                    
                     <circle cx="150" cy="200" r="8" class="node" />
-                    
                     <path class="wire" d="M 150,200 L 180,200 M 180,180 L 180,220 M 200,180 L 200,220 M 200,200 L 260,200 L 320,200" />
-                    
                     <circle cx="260" cy="200" r="8" class="node" />
-                    
                     <path class="wire" d="M 320,130 L 320,230 L 420,180 Z" />
                     <path class="wire" style="stroke-width: 4px;" d="M 330,160 L 350,160 M 330,200 L 350,200 M 340,190 L 340,210" />
-                    
                     <path class="wire" d="M 260,200 L 260,230 L 245,240 L 275,260 L 245,280 L 275,300 L 260,310 L 260,330" />
                     <path class="wire" d="M 240,330 L 280,330 M 248,342 L 272,342 M 256,354 L 264,354" />
-                    
                     <path class="wire" d="M 150,200 L 150,80 L 200,80 L 210,60 L 230,100 L 250,60 L 270,100 L 280,80 L 450,80 L 450,180" />
-                    
                     <path class="wire" d="M 320,160 L 290,160 L 290,120 L 450,120 L 450,180" />
                     <path class="wire" d="M 420,180 L 480,180" />
-                    
                     <circle cx="450" cy="180" r="8" class="node" />
                     <circle cx="480" cy="180" r="8" class="node" />
                 </svg>
@@ -421,40 +441,25 @@
                 svg: `
                     <path class="wire" d="M 0,200 L 50,200" />
                     <circle cx="0" cy="200" r="3" class="node" />
-
                     <path class="wire" d="M 50,200 L 60,180 L 80,220 L 100,180 L 120,220 L 130,200 L 150,200" />
                     <text id="label-r1" class="label" x="90" y="160"></text>
-
                     <circle cx="150" cy="200" r="3" class="node" />
-                    
                     <path class="wire" d="M 150,200 L 160,200 L 170,180 L 190,220 L 210,180 L 230,220 L 240,200 L 260,200" />
                     <text id="label-r2" class="label" x="200" y="160"></text>
-
                     <circle cx="260" cy="200" r="3" class="node" />
-
-                    <path class="wire" d="M 260,200 L 260,240" />
-                    <path class="wire" d="M 240,240 L 280,240 M 240,255 L 280,255" />
-                    <path class="wire" d="M 260,255 L 260,330" />
+                    <path class="wire" d="M 260,200 L 260,240 M 240,240 L 280,240 M 240,255 L 280,255 M 260,255 L 260,330" />
                     <text id="label-c2" class="label" x="290" y="247.5" style="text-anchor: start;"></text>
-
                     <path class="wire" d="M 240,330 L 280,330 M 248,338 L 272,338 M 256,346 L 264,346" />
-
                     <path class="wire" d="M 260,200 L 320,200" />
-
                     <path class="wire" d="M 320,130 L 320,230 L 420,180 Z" />
                     <path class="wire" style="stroke-width: 1.5px;" d="M 325,160 L 335,160 M 325,200 L 335,200 M 330,195 L 330,205" />
-
-                    <path class="wire" d="M 150,200 L 150,80 L 200,80" />
-                    <path class="wire" d="M 200,60 L 200,100 M 215,60 L 215,100" />
+                    <path class="wire" d="M 150,200 L 150,80 L 200,80 M 200,60 L 200,100 M 215,60 L 215,100" />
                     <text id="label-c1" class="label" x="207.5" y="40"></text>
                     <path class="wire" d="M 215,80 L 450,80 L 450,180" />
-
                     <path class="wire" d="M 320,160 L 290,160 L 290,120 L 450,120 L 450,180" />
-
                     <path class="wire" d="M 420,180 L 480,180" />
                     <circle cx="450" cy="180" r="3" class="node" />
                     <circle cx="480" cy="180" r="3" class="node" />
-                    
                     <text class="label" x="490" y="180" style="text-anchor: start;">Vout</text>
                     <text id="label-vi" class="label" x="-10" y="200" style="text-anchor: end;"></text>
                 `
@@ -472,40 +477,26 @@
                 svg: `
                     <path class="wire" d="M 0,200 L 60,200" />
                     <circle cx="0" cy="200" r="3" class="node" />
-
                     <path class="wire" d="M 60,180 L 60,220 M 75,180 L 75,220" />
                     <text id="label-c1" class="label" x="67.5" y="160"></text>
-
                     <path class="wire" d="M 75,200 L 150,200" />
                     <circle cx="150" cy="200" r="3" class="node" />
-
                     <path class="wire" d="M 150,200 L 180,200" />
-
                     <path class="wire" d="M 180,180 L 180,220 M 195,180 L 195,220" />
                     <text id="label-c2" class="label" x="187.5" y="160"></text>
-
                     <path class="wire" d="M 195,200 L 260,200 L 320,200" />
                     <circle cx="260" cy="200" r="3" class="node" />
-
                     <path class="wire" d="M 320,130 L 320,230 L 420,180 Z" />
                     <path class="wire" style="stroke-width: 1.5px;" d="M 325,160 L 335,160 M 325,200 L 335,200 M 330,195 L 330,205" />
-
                     <path class="wire" d="M 260,200 L 260,230 L 245,240 L 275,260 L 245,280 L 275,300 L 260,310 L 260,330" />
                     <text id="label-r2" class="label" x="290" y="270" style="text-anchor: start;"></text>
-
                     <path class="wire" d="M 240,330 L 280,330 M 248,338 L 272,338 M 256,346 L 264,346" />
-
-                    <path class="wire" d="M 150,200 L 150,80 L 200,80" />
-                    <path class="wire" d="M 200,80 L 210,60 L 230,100 L 250,60 L 270,100 L 280,80 L 300,80" />
+                    <path class="wire" d="M 150,200 L 150,80 L 200,80 L 210,60 L 230,100 L 250,60 L 270,100 L 280,80 L 450,80 L 450,180" />
                     <text id="label-r1" class="label" x="240" y="40"></text>
-                    <path class="wire" d="M 300,80 L 450,80 L 450,180" />
-
                     <path class="wire" d="M 320,160 L 290,160 L 290,120 L 450,120 L 450,180" />
-                    
                     <path class="wire" d="M 420,180 L 480,180" />
                     <circle cx="450" cy="180" r="3" class="node" />
                     <circle cx="480" cy="180" r="3" class="node" />
-                    
                     <text class="label" x="490" y="180" style="text-anchor: start;">Vout</text>
                     <text id="label-vi" class="label" x="-10" y="200" style="text-anchor: end;"></text>
                 `
